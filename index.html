@@ -85,6 +85,24 @@ p.secsub{color:var(--mut);font-size:13.5px;margin:0 4px 14px}
 .empty{border:1px dashed var(--line);border-radius:16px;padding:34px;text-align:center;color:var(--mut)}
 .fab{position:fixed;right:20px;bottom:22px;background:var(--pink);color:#fff;border:none;border-radius:999px;padding:14px 22px;font-weight:800;font-size:15px;box-shadow:0 14px 30px rgba(242,118,140,.45);z-index:40}
 
+/* ---------- wishlist ---------- */
+.chipfilter{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 16px}
+.chipfilter button{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-weight:700;font-size:13.5px}
+.chipfilter button.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.wish-list{display:flex;flex-direction:column;gap:12px}
+.wish-card{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.wish-check{width:27px;height:27px;border-radius:50%;border:2px solid var(--pink);background:transparent;color:#fff;font-size:14px;font-weight:800;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;padding:0}
+.wish-check.on{background:var(--pink)}
+.wish-card.done .wish-title{text-decoration:line-through;color:var(--mut)}
+.wish-title{font-weight:800;font-size:16.5px}
+.wish-note{color:var(--mut);font-size:13.5px;line-height:1.5;margin-top:2px}
+.wish-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.wish-meta .chip{background:#3a2233;color:var(--pink2)}
+.wish-meta .chip.date{background:#2c2a3d;color:#b9c6ff}
+.wish-meta a.chip{text-decoration:none;background:#233528;color:#9fe6b8}
+.wish-acts{margin-left:auto;display:flex;gap:6px;flex:none}
+.wish-acts .mini{background:transparent;color:var(--mut);border-color:var(--line)}
+
 /* ---------- timeline ---------- */
 .tl{position:relative;margin:10px 0 0 12px;padding-left:26px;border-left:2px dashed var(--line)}
 .tl-item{position:relative;padding:0 0 26px}
@@ -178,6 +196,7 @@ p.secsub{color:var(--mut);font-size:13.5px;margin:0 4px 14px}
       <button data-page="beranda" class="on" type="button">🏠 Beranda</button>
       <button data-page="momen" type="button">📸 Momen</button>
       <button data-page="timeline" type="button">🕰️ Timeline</button>
+      <button data-page="wishlist" type="button">🎁 Wishlist</button>
       <button data-page="pengaturan" type="button">⚙️ Pengaturan</button>
     </nav>
 
@@ -227,6 +246,16 @@ p.secsub{color:var(--mut);font-size:13.5px;margin:0 4px 14px}
       <p class="secsub">Perjalanan kalian dari awal sampai sekarang</p>
       <div class="tl" id="tlList"></div>
       <div class="empty hidden" id="tlEmpty">Belum ada momen untuk ditampilkan.</div>
+    </section>
+
+    <!-- WISHLIST -->
+    <section id="page-wishlist" class="hidden">
+      <h3 class="sec" style="margin-top:6px">Wishlist Kita</h3>
+      <p class="secsub">Hal-hal yang ingin kalian wujudkan berdua — centang kalau sudah tercapai</p>
+      <div class="chipfilter" id="wishFilters"></div>
+      <div class="toolbar"><button class="btn primary" id="btnAddWish" type="button">+ Tambah Wishlist</button></div>
+      <div class="wish-list" id="wishList"></div>
+      <div class="empty hidden" id="wishEmpty">Belum ada wishlist. Tambah impian pertama kalian, yuk.</div>
     </section>
 
     <!-- PENGATURAN -->
@@ -279,6 +308,29 @@ p.secsub{color:var(--mut);font-size:13.5px;margin:0 4px 14px}
   </div>
 </div>
 
+<!-- ============ MODAL WISHLIST ============ -->
+<div class="overlay hidden" id="wishOverlay">
+  <div class="modal">
+    <h3 id="wishModalTitle">Tambah Wishlist</h3>
+    <p class="sub">Impian, rencana, atau barang yang ingin diwujudkan berdua.</p>
+    <label for="wTitle">Judul</label>
+    <input type="text" id="wTitle" placeholder="cth. Liburan ke Bali">
+    <div class="row2">
+      <div><label for="wOwner">Keinginan siapa</label><select id="wOwner"></select></div>
+      <div><label for="wTarget">Target tanggal (opsional)</label><input type="date" id="wTarget"></div>
+    </div>
+    <label for="wLink">Link (opsional)</label>
+    <input type="text" id="wLink" placeholder="https://…">
+    <label for="wNote">Catatan (opsional)</label>
+    <textarea id="wNote" rows="2" placeholder="Detail singkat…"></textarea>
+    <div class="err" id="wishErr"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn primary" id="btnSaveWish" type="button" style="flex:1;justify-content:center">Simpan</button>
+      <button class="btn" id="btnCancelWish" type="button">Batal</button>
+    </div>
+  </div>
+</div>
+
 <div class="lightbox hidden" id="lightbox"><button class="lb-nav" id="lbPrev" type="button">‹</button><img id="lightboxImg" alt="Foto besar"><button class="lb-nav" id="lbNext" type="button">›</button><div class="lb-count" id="lbCount"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -305,7 +357,10 @@ function coupleNames(){ if(!settings) return 'Kami'; const a=(settings.name1||''
 function show(view){ ['authView','setupView','appView'].forEach(v=>$(v).classList.add('hidden')); $(view).classList.remove('hidden'); }
 function gotoPage(p){
   document.querySelectorAll('nav.pills button').forEach(b=>b.classList.toggle('on', b.dataset.page===p));
-  ['beranda','momen','timeline','pengaturan'].forEach(x=>$('page-'+x).classList.toggle('hidden', x!==p));
+  ['beranda','momen','timeline','wishlist','pengaturan'].forEach(x=>$('page-'+x).classList.toggle('hidden', x!==p));
+  const fab=$('btnAddFab');
+  fab.classList.toggle('hidden', p==='pengaturan');
+  fab.textContent = p==='wishlist' ? '+ Wishlist' : '+ Momen';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('nav.pills button').forEach(b=>b.addEventListener('click',()=>gotoPage(b.dataset.page)));
@@ -353,6 +408,7 @@ async function enterApp(){
   settings = data;
   if(!settings.name1 || !settings.name2){ show('setupView'); return; }
   await loadMoments();
+  await loadWishlist();
   renderAll();
   show('appView');
 }
@@ -365,7 +421,7 @@ $('btnSetup').addEventListener('click', async ()=>{
   $('btnSetup').disabled=false;
   if(error){ $('setupErr').textContent=error.message; return; }
   settings = {...settings, name1:n1, name2:n2, start_date:sd};
-  await loadMoments(); renderAll(); show('appView'); toast('Selamat datang, '+coupleNames()+' ♡');
+  await loadMoments(); await loadWishlist(); renderAll(); show('appView'); toast('Selamat datang, '+coupleNames()+' ♡');
 });
 
 /* ---------- data ---------- */
@@ -474,7 +530,8 @@ function openMomentForm(m){
   renderThumbs();
   $('momentOverlay').classList.remove('hidden');
 }
-['btnAdd1','btnAdd2','btnAddFab'].forEach(id=>$(id).addEventListener('click',()=>openMomentForm(null)));
+['btnAdd1','btnAdd2'].forEach(id=>$(id).addEventListener('click',()=>openMomentForm(null)));
+$('btnAddFab').addEventListener('click',()=>{ if(!$('page-wishlist').classList.contains('hidden')) openWishForm(null); else openMomentForm(null); });
 $('btnSeeAll').addEventListener('click',()=>gotoPage('momen'));
 $('btnCancelMoment').addEventListener('click',()=>$('momentOverlay').classList.add('hidden'));
 $('fPhoto').addEventListener('change', async e=>{
@@ -512,6 +569,91 @@ async function deleteMoment(m){
   const { error } = await sb.from('moments').delete().eq('id',m.id);
   if(error){ toast('Gagal menghapus: '+error.message); return; }
   await loadMoments(); renderAll(); toast('Momen dihapus.');
+}
+
+/* ---------- wishlist ---------- */
+let wishlist = [], wishFilter = 'semua', editingWishId = null;
+function ownerLabel(o){ return (!o || o==='berdua') ? 'Berdua 💑' : o; }
+async function loadWishlist(){
+  const { data, error } = await sb.from('wishlist').select('*').order('done',{ascending:true}).order('created_at',{ascending:false});
+  if(error){ wishlist = []; renderWishFilters(); $('wishList').innerHTML=''; const el=$('wishEmpty'); el.classList.remove('hidden'); el.textContent='Tabel wishlist belum dibuat — jalankan dulu SQL tambahannya ya.'; return; }
+  wishlist = data||[]; renderWishlist();
+}
+function renderWishFilters(){
+  const names = settings ? [settings.name1, settings.name2].filter(Boolean) : [];
+  const opts = [{v:'semua',t:'Semua'},{v:'berdua',t:'Berdua 💑'}].concat(names.map(n=>({v:n,t:n})));
+  const box=$('wishFilters'); box.innerHTML='';
+  opts.forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.textContent=o.t; b.classList.toggle('on', wishFilter===o.v); b.addEventListener('click',()=>{ wishFilter=o.v; renderWishlist(); }); box.appendChild(b); });
+}
+function renderWishlist(){
+  renderWishFilters();
+  const list = wishlist.filter(w=> wishFilter==='semua' ? true : (w.owner||'berdua')===wishFilter);
+  const box=$('wishList'); box.innerHTML='';
+  list.forEach(w=>{
+    const el=document.createElement('div'); el.className='wish-card'+(w.done?' done':'');
+    el.innerHTML = '<button class="wish-check'+(w.done?' on':'')+'" type="button">'+(w.done?'✓':'')+'</button>'+
+      '<div style="flex:1;min-width:0"><div class="wish-title">'+escapeHtml(w.title)+'</div>'+
+      (w.note? '<div class="wish-note">'+escapeHtml(w.note)+'</div>':'')+
+      '<div class="wish-meta"><span class="chip">'+escapeHtml(ownerLabel(w.owner))+'</span>'+
+      (w.target_date? '<span class="chip date">🎯 '+fmtDate(w.target_date)+'</span>':'')+
+      (w.link? '<a class="chip" target="_blank" rel="noopener">🔗 Buka link</a>':'')+'</div></div>'+
+      '<div class="wish-acts"><button class="mini" data-act="edit">Edit</button><button class="mini danger" data-act="del">Hapus</button></div>';
+    el.querySelector('.wish-check').addEventListener('click',()=>toggleWish(w));
+    if(w.link){ el.querySelector('a.chip').href = w.link; }
+    el.querySelector('[data-act="edit"]').addEventListener('click',()=>openWishForm(w));
+    el.querySelector('[data-act="del"]').addEventListener('click',()=>deleteWish(w));
+    box.appendChild(el);
+  });
+  const el=$('wishEmpty');
+  el.classList.toggle('hidden', list.length>0);
+  el.textContent = wishlist.length ? 'Tidak ada wishlist untuk filter ini.' : 'Belum ada wishlist. Tambah impian pertama kalian, yuk.';
+}
+async function toggleWish(w){
+  const { error } = await sb.from('wishlist').update({done: !w.done}).eq('id', w.id);
+  if(error){ toast('Gagal: '+error.message); return; }
+  if(!w.done) toast('Yeay, satu wishlist tercapai! 🎉');
+  await loadWishlist();
+}
+function fillOwnerOptions(){
+  const s=$('wOwner'); s.innerHTML='';
+  const opts=[{v:'berdua',t:'Berdua 💑'}];
+  if(settings && settings.name1) opts.push({v:settings.name1,t:settings.name1});
+  if(settings && settings.name2) opts.push({v:settings.name2,t:settings.name2});
+  opts.forEach(o=>{ const op=document.createElement('option'); op.value=o.v; op.textContent=o.t; s.appendChild(op); });
+}
+function openWishForm(w){
+  editingWishId = w ? w.id : null;
+  fillOwnerOptions();
+  $('wishModalTitle').textContent = w ? 'Edit Wishlist' : 'Tambah Wishlist';
+  $('wTitle').value = w ? (w.title||'') : '';
+  $('wOwner').value = w ? (w.owner||'berdua') : 'berdua';
+  $('wTarget').value = w ? (w.target_date||'') : '';
+  $('wLink').value = w ? (w.link||'') : '';
+  $('wNote').value = w ? (w.note||'') : '';
+  $('wishErr').textContent='';
+  $('wishOverlay').classList.remove('hidden');
+}
+$('btnAddWish').addEventListener('click',()=>openWishForm(null));
+$('btnCancelWish').addEventListener('click',()=>$('wishOverlay').classList.add('hidden'));
+$('btnSaveWish').addEventListener('click', async ()=>{
+  const title=$('wTitle').value.trim(); $('wishErr').textContent='';
+  if(!title){ $('wishErr').textContent='Judul wajib diisi.'; return; }
+  let link=$('wLink').value.trim();
+  if(link && !/^https?:\/\//i.test(link)) link='https://'+link;
+  const payload={ title, owner:$('wOwner').value, target_date:$('wTarget').value||null, link: link||null, note:$('wNote').value.trim()||null };
+  $('btnSaveWish').disabled=true; $('btnSaveWish').textContent='Menyimpan…';
+  let error;
+  if(editingWishId){ ({error}=await sb.from('wishlist').update(payload).eq('id',editingWishId)); }
+  else { ({error}=await sb.from('wishlist').insert(payload)); }
+  $('btnSaveWish').disabled=false; $('btnSaveWish').textContent='Simpan';
+  if(error){ $('wishErr').textContent=error.message; return; }
+  $('wishOverlay').classList.add('hidden'); await loadWishlist(); toast('Wishlist tersimpan ♡');
+});
+async function deleteWish(w){
+  if(!confirm('Hapus wishlist "'+w.title+'"?')) return;
+  const { error } = await sb.from('wishlist').delete().eq('id', w.id);
+  if(error){ toast('Gagal menghapus: '+error.message); return; }
+  await loadWishlist(); toast('Wishlist dihapus.');
 }
 
 /* ---------- settings ---------- */
